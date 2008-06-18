@@ -38,17 +38,25 @@ module Technoweenie # :nodoc:
         # Performs the actual resizing operation for a thumbnail
         def resize_image(img, size)
           size = size.first if size.is_a?(Array) && size.length == 1
-          img.combine_options do |commands|
-            commands.strip unless attachment_options[:keep_profile]
-            if size.is_a?(Fixnum) || (size.is_a?(Array) && size.first.is_a?(Fixnum))
-              if size.is_a?(Fixnum)
-                size = [size, size]
-                commands.resize(size.join('x'))
+
+          # If the last character of the geometry string is a "^", which
+          # signifies the crop-resize action, then perform that.
+          if(size.to_s[-1, 1] == "^")
+            dimensions = size.to_s.chop.split("x")
+            img.crop_resized(dimensions[0], dimensions[1])
+          else
+            img.combine_options do |commands|
+              commands.strip unless attachment_options[:keep_profile]
+              if size.is_a?(Fixnum) || (size.is_a?(Array) && size.first.is_a?(Fixnum))
+                if size.is_a?(Fixnum)
+                  size = [size, size]
+                  commands.resize(size.join('x'))
+                else
+                  commands.resize(size.join('x') + '!')
+                end
               else
-                commands.resize(size.join('x') + '!')
+                commands.resize(size.to_s)
               end
-            else
-              commands.resize(size.to_s)
             end
           end
           self.temp_path = img
